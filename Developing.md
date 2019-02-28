@@ -11,7 +11,7 @@
     ```
 
 ## Update JSZip
-Run the corresponding update script with the desired version number:
+Run the corresponding update script with the new version number:
 ```
 docker run -v "${PWD}:/home/ImageSequenceAnimation" --rm -it animation-i python update_jszip.py VERSION
 ```

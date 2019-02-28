@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 
 ENV LANG en_US.UTF-8
 
-# Install basic tools
+# Set up the environment and install basic tools
 RUN mkdir /home/ImageSequenceAnimation \
     && apt-get update && apt-get install -y \
 	   curl \
