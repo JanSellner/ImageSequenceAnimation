@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Quadratic Function</title>
+        <meta charset='UTF-8'>
+        <script src='../dist/ImageSequenceAnimation.bundle.min.js'></script>
+    </head>
+    <body>
+        <div id="animation" data-zip_src="example.zip">
+            <canvas></canvas><br />
+            <label>a = <input type="number" name="a" /></label><input type="range" name="a" /><br />
+        </div>
+        <script>
+            var divID = "animation";
+            var animation = new ImageSequenceAnimation(divID);
+            // The name must match with the name of the control elements specified in the div above
+            animation.addControl(new HTMLSlider({name: "a", min: 1, max: 9, step: 2}));
+            animation.loadFromZip();
+        </script>
+    </body>
+</html>
