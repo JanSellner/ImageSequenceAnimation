@@ -1,6 +1,4 @@
 var ImageSequenceAnimationLibrary = (function () {
-	var JSZip = require('jszip');
-	
     function numbInString(filename) {
         var regex = /([A-Za-z]+)=(\d+)/g;
 
