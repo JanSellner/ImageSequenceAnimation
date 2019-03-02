@@ -44,7 +44,7 @@ and we want to plot this function for `a = [1, 3, 5, 7, 9]`. The animation is im
     </script>
     ```
 
-    Basically, you need to specify the link to the zip file via the `data-zip_src` attribute, define a canvas, set up the control elements and add a small script to link the pieces together and load the animation. Note how the possible values of `a` are specified via `min`, `max` and `step`.
+    Basically, you need to specify the link to the zip archive via the `data-zip_src` attribute, define a canvas, set up the control elements and add a small script to link the pieces together and load the animation. Note how the possible values of `a` are specified via `min`, `max` and `step`.
 
 That's it. The complete example can be found in [`example.html`](example/example.html) and works out of the box.
 
@@ -52,10 +52,10 @@ That's it. The complete example can be found in [`example.html`](example/example
 ### API
 The API is documented in the un-minified [JavaScript](src) files.
 
-### Zip File
-The zip file must contain every possible combination of parameter values as defined by the range (min, max, step). Each parameter value must be part of the filename as `name=index`. If you have more than one parameter, just append the names, e.g. `x=00y=00.png`.
+### Zip Archive
+The zip archive must contain every possible combination of parameter values as defined by the range (min, max, step). Each parameter value must be part of the filename as `name=index`. If you have more than one parameter, just append the names, e.g. `x=00y=00.png`.
 
-Note: the `data-zip_src` attribute can also directly contain a Base64 encoded zip file, e.g. `data-zip_src="data:application/zip;base64,UEsDBBQ...` so that it is easily possible to create a self-contained webpage.
+Note: the `data-zip_src` attribute can also directly contain a Base64 encoded zip archive, e.g. `data-zip_src="data:application/zip;base64,UEsDBBQ...` so that it is easily possible to create a self-contained webpage.
 
 ## Control Elements
 Currently, the following control elements are supported:
@@ -67,7 +67,7 @@ Currently, the following control elements are supported:
 ## Limitations
 There are basically two limitations with the precomputed approach used by this library:
 * You can only show values to the user which you have precomputed. This means e.g. that the user cannot enter arbitrary values for `a` in the above example. What is more, some control elements like a text input field is probably not very useful because there is no way that you can precompute every possible user input in an efficient way.
-* As more images you precompute, as larger gets the zip file. This is only useful to some extent as you usually don't want that your users have to load huge files on every visit of your page. This can get especially problematic when you have many parameters as you need to precompute every possible parameter combination. Note: there is an `animation.loadFromZipLazy();` method to load the data only upon request (user interaction) to mitigate this problem a bit.
+* As more images you precompute, as larger gets the zip archive. This is only useful to some extent as you usually don't want that your users have to load huge files on every visit of your page. This can get especially problematic when you have many parameters as you need to precompute every possible parameter combination. Note: there is an `animation.loadFromZipLazy();` method to load the data only upon request (user interaction) to mitigate this problem a bit.
 
 Besides these limitations, the approach is still useful for many smaller animations. Very often it is sufficient to let the user select parameters from a range of predefined values to make a point clear.
 

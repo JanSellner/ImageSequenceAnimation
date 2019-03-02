@@ -37,21 +37,33 @@ var ImageSequenceAnimationLibrary = (function () {
         }
     }
 
+    /**
+     * Creates a parameter object which can be used by control (e.g. a slider) elements.
+     *
+     * @param name Unique name of the variable. Must correspond to the filenames of the zip archive.
+     * @param min First value of the interval (including).
+     * @param max Last value of the interval (including).
+     * @param step Difference between two consecutive values of the interval.
+     * @param defaultValue Initial value of the parameter (optional). Defaults is <code>min</code>.
+     * @constructor
+     */
     function ParameterAnimation(name, min, max, step, defaultValue) {
+        this.name = name;
         this.min = min;
         this.max = max;
         this.step = step;
-        this.name = name;
+
         this.numbDigits = 0;
         this.onChangeListeners = [];
+
         this.setDefault(defaultValue === undefined ? this.min : defaultValue);
 
         // Check if the range is correct
         // This is not so easy since it can't be expected that the calculations lead to the exact same results. The approach here is to force the number of decimal digits of the calculated maximum to be the same as the provided maximum
         // E.g. this.max = 5.52, numDecimals(5.52) = 2, calculatedMax = (5.520000001).toFixed... = 5.52
-        var calculatedMax = (this.min + (this.sizeImages() - 1) * this.step).toFixed(numDecimals(this.max));
+        var calculatedMax = (this.min + (this.numbValues() - 1) * this.step).toFixed(numDecimals(this.max));
         if (calculatedMax !== String(this.max)) {
-            throw new Error("The value range (min: " + this.min + ", max: " + this.max + ", step: " + this.step + ") does not fit. It is not possible to reach the maximum from the minimum with the given step size. With the current setting, there are only " + this.sizeImages() + " steps reaching " + calculatedMax + " instead of " + this.max + ".");
+            throw new Error("The value range (min: " + this.min + ", max: " + this.max + ", step: " + this.step + ") does not fit. It is not possible to reach the maximum from the minimum with the given step size. With the current setting, there are only " + this.numbValues() + " steps reaching " + calculatedMax + " instead of " + this.max + ".");
         }
     }
 
@@ -74,11 +86,21 @@ var ImageSequenceAnimationLibrary = (function () {
         }
     };
 
-    ParameterAnimation.prototype.sizeImages = function() {
+    /**
+     * Number of possible parameter values.
+     *
+     * @returns {number}
+     */
+    ParameterAnimation.prototype.numbValues = function() {
         // E.g. {5,6,7,8,9,10} => (10 - 5) / 1 = 6 elements
         return Math.round((this.max - this.min) / this.step) + 1;   // Currently, the zip library does not offer an easy way to count the total number of elements, but the information is available by the slider definition anyway
     };
 
+    /**
+     * Image id which corresponds to the current parameter value.
+     *
+     * @returns {*}
+     */
     ParameterAnimation.prototype.getImgId = function() {
         var id = Math.round((this.current - this.min) * (1 / this.step));
 
@@ -88,19 +110,30 @@ var ImageSequenceAnimationLibrary = (function () {
             id = 0;
         }
 
-        if (id >= this.sizeImages()) {
+        if (id >= this.numbValues()) {
             this.setCurrent(this.max);
 
-            id = this.sizeImages() - 1;
+            id = this.numbValues() - 1;
         }
 
         return pad(id, this.numbDigits);
     };
 
+    /**
+     * Get informed when the value of this parameter changes.
+     *
+     * @param callback The callback function is invoked with the current value of the variable.
+     */
     ParameterAnimation.prototype.addOnChangeListener = function(callback) {
         this.onChangeListeners.push(callback.bind(this));
     };
 
+    /**
+     * Main object controlling the image animation.
+     *
+     * @param divID ID of the div container which must contain the canvas element.
+     * @constructor
+     */
     function ImageSequenceAnimation(divID) {
         // Find the div
         if (divID === undefined) {
@@ -130,7 +163,7 @@ var ImageSequenceAnimationLibrary = (function () {
         this.loadedElements = 0;
         this.images = {};   // Mapping between the filename (without the extension) and the corresponding image data
 
-        // Indicates whether a zip file has been loading
+        // Indicates whether a zip archive started to load
         this.startedLoading = false;
     }
 
@@ -145,7 +178,7 @@ var ImageSequenceAnimationLibrary = (function () {
 
     function getImage() {
         if (!this.images.hasOwnProperty(buildParameterString.call(this))) {
-            throw new Error("The zip file does not contain an image with the name " + buildParameterString.call(this) + ". Make sure you set the control elements in the same order as defined in the zip file.");
+            throw new Error("The zip archive does not contain an image with the name " + buildParameterString.call(this) + ". Make sure you set the control elements in the same order as defined in the zip archive.");
         }
 
         return this.images[buildParameterString.call(this)];
@@ -188,7 +221,7 @@ var ImageSequenceAnimationLibrary = (function () {
         if (loadingFinished.call(this)) {
             // All elements are now loaded
             informListeners(this.loadingFinishedListeners);
-            loadImage.call(this);
+            showImage.call(this);
         }
     }
 
@@ -203,7 +236,7 @@ var ImageSequenceAnimationLibrary = (function () {
         return string;
     }
 
-    function loadImage(img) {
+    function showImage(img) {
         if (img === undefined) {
             img = getImage.call(this);
         }
@@ -234,21 +267,40 @@ var ImageSequenceAnimationLibrary = (function () {
     function getDataSrc() {
         var attribute = "data-zip_src";
         if (!this.div.hasAttribute(attribute)) {
-            throw new Error("The div " + this.divID + " does not have an attribute " + attribute + ". This is required and should point to the zip file containing the images.");
+            throw new Error("The div " + this.divID + " does not have an attribute " + attribute + ". This is required and should point to the zip archive containing the images.");
         }
 
         return this.div.getAttribute(attribute);
     }
 
+    /**
+     * Add a control object to the animation (e.g. a slider).
+     *
+     * The control object must define two methods:
+     *  * <code>init(animation)</code>: initializes the control element called with the current animation object.
+     *  * <code>getParameters()</code>: must return an array of <code>ParameterAnimation</code> objects defining all the parameters used by the control object. Most control elements use only one parameter (e.g. a slider). An counterexample is a canvas locator which uses two parameters (x and y coordinates).
+     *
+     * @param control
+     */
     ImageSequenceAnimation.prototype.addControl = function(control) {
         control.init(this);
         var parameters = control.getParameters();
 
+        if (!Array.isArray(parameters)) {
+            console.warn("The getParameters() method should return an array of parameters.");
+            parameters = [parameters];
+        }
+
         for (var i = 0; i < parameters.length; ++i) {
             var parameter = parameters[i];
+
+            if (!(parameter instanceof ParameterAnimation)) {
+                console.warn("The parameters should be ParameterAnimation objects. Got:\n" + JSON.stringify(parameter));
+            }
+
             // Get informed when the parameters changes
             parameter.addOnChangeListener(function() {
-                loadImage.call(this);
+                showImage.call(this);
             }.bind(this));
 
             this.parameters[parameter.name] = parameter;
@@ -256,29 +308,54 @@ var ImageSequenceAnimationLibrary = (function () {
         }
     };
 
+    /**
+     * Get informed when all data from the zip archive is loaded.
+     *
+     * @param callback The callback function is invoked with no parameters.
+     */
     ImageSequenceAnimation.prototype.addLoadingFinishedListener = function(callback) {
         this.loadingFinishedListeners.push(callback.bind(this));
     };
 
+    /**
+     * Get informed when an element of the zip archive (e.g. an image) is loaded.
+     *
+     * @param callback The callback function is invoked with no parameters.
+     */
     ImageSequenceAnimation.prototype.addElementLoadedListener = function(callback) {
         this.elementLoadedListeners.push(callback.bind(this));
     };
 
+    /**
+     * Number of elements in the zip archive.
+     *
+     * @returns {number}
+     */
     ImageSequenceAnimation.prototype.totalElements = function() {
         var total = 1;
 
         for (var i = 0; i < this.parameterNames.length; ++i) {
             var name = this.parameterNames[i];
-            total *= this.parameters[name].sizeImages();
+            total *= this.parameters[name].numbValues();
         }
 
         return total;
     };
 
+    /**
+     * Indicates whether a zip archive is currently loading.
+     *
+     * @returns {boolean}
+     */
     ImageSequenceAnimation.prototype.isLoading = function() {
         return this.loadedElements > 0 && !loadingFinished.call(this);
     };
 
+    /**
+     * Starts the loading process of the zip archive and extracts its content.
+     *
+     * @param src The location of the zip archive (optional). Defaults to the <code>data-zip_src</code> attribute of the div container.
+     */
     ImageSequenceAnimation.prototype.loadFromZip = function(src) {
         if (src === undefined) {
             src = getDataSrc.call(this);
@@ -296,13 +373,13 @@ var ImageSequenceAnimationLibrary = (function () {
         xhr.responseType = "blob";  // We want to get binary data
         xhr.onload = function() {
             if (this.status !== 200) {
-                throw new Error("Could not load the zip file " + src + " (status code: " + this.status + ").");
+                throw new Error("Could not load the zip archive " + src + " (status code: " + this.status + ").");
             }
 
             JSZip.loadAsync(this.response).then(function(jszip) {
                 jszip.folder("").forEach(function(relativePath, zipObject) {
                     if (!relativePath.endsWith(".png")) {
-                        console.warn("The zip file " + src + " contains the file " + relativePath + " which is not a png file. The file is ignored.");
+                        console.warn("The zip archive " + src + " contains the file " + relativePath + " which is not a png file. The file is ignored.");
                         return;
                     }
 
@@ -317,9 +394,17 @@ var ImageSequenceAnimationLibrary = (function () {
         xhr.send();
     };
 
+    /**
+     * Same as {@link ImageSequenceAnimation.loadFromZip} but does not start the loading process directly. Instead, the user sees only a thumbnail and must trigger the loading process manually.
+     *
+     * This is useful when the zip archive is large so that you can save bandwidth.
+     *
+     * @param thumbnailExtension Extension of the thumbnail image which must be located in the same directory as the zip archive (optional). Defaults to <code>.png</code>.
+     * @param src The location of the zip archive (optional). Defaults to the <code>data-zip_src</code> attribute of the div container.
+     */
     ImageSequenceAnimation.prototype.loadFromZipLazy = function(thumbnailExtension, src) {
         if (thumbnailExtension === undefined) {
-            thumbnailExtension = ".pdf";
+            thumbnailExtension = ".png";
         }
         if (src === undefined) {
             src = getDataSrc.call(this);
@@ -371,7 +456,7 @@ var ImageSequenceAnimationLibrary = (function () {
                 ctx.save();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.globalAlpha = 0.3;
-                loadImage.call(self, img);
+                showImage.call(self, img);
                 ctx.restore();
 
                 ctx.save();
@@ -401,6 +486,13 @@ var ImageSequenceAnimationLibrary = (function () {
         };
     };
 
+    /**
+     * Synchronises two animations. This means that when the parameter of one animation changes a linked parameter in the second animation object will change as well.
+     *
+     * @param otherAnimation
+     * @param namesAnimation Names of the variables in the other animation object which should be linked.
+     * @param namesThis Names of the variables in the current animation object which should be linked.
+     */
     ImageSequenceAnimation.prototype.syncAnimations = function(otherAnimation, namesAnimation, namesThis) {
         if (namesAnimation.length !== namesThis.length) {
             throw new Error("Both list of names (parameter names from the other animation object, own parameter names) must have the same length.");
