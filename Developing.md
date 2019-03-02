@@ -7,7 +7,7 @@
     ```
 2. Run the Python build script
     ```
-    docker run -v "${PWD}:/home/ImageSequenceAnimation" --rm -it animation-i python build.py
+    docker run -v "${PWD}:/home/ImageSequenceAnimation" --rm -it animation-i python build.py VERSION
     ```
 
 ## Update JSZip

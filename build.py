@@ -1,5 +1,12 @@
 import subprocess
 import re
+import sys
+
+# The version of the library is set as command line argument
+if len(sys.argv) != 2:
+    raise ValueError('You must specify a version number.\nUsage: python ' + os.path.basename(__file__) + ' VERSION')
+
+version = sys.argv[1]
 
 # Minify and bundle all js files
 result = subprocess.run('uglifyjs vendor/jszip.min.js src/ImageSequenceAnimation.js src/ImageSequenceAnimationControls.js --mangle --compress', stdout=subprocess.PIPE, shell=True)
@@ -18,7 +25,7 @@ if not match:
 preamble_jszip = match.group(0)
 
 # Own version information
-preamble = '/*!\nImageSequenceAnimation v1.0.0\n*/'
+preamble = '/*!\nImageSequenceAnimation v' + version + '\n*/'
 
 # Write the output file
 path_bundle = 'dist/ImageSequenceAnimation.bundle.min.js'
