@@ -185,6 +185,13 @@ function HTMLSelection(settings) {
 /**
  * Links two parameters (x and y) to the mouse position in a canvas element.
  *
+ * The coordinate system of the parameters is x to the right and y to the top:
+ *    y
+ *    ^
+ *    |
+ *    |
+ *    0---->x
+ *
  * @param name Name of the two parameters:
  *  <ul>
  *     <li><code>xName</code>: Unique name of the parameter controlling the x-direction. Must correspond to the filenames in the zip file.</li>
