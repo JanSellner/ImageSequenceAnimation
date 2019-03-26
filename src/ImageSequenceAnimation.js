@@ -1,6 +1,6 @@
 var ImageSequenceAnimationLibrary = (function () {
     function numbInString(filename) {
-        var regex = /([A-Za-z]+)=(\d+)/g;
+        var regex = /([A-Za-z0-9]+)=(\d+)/g;
 
         var parameters = [];
         var match;
@@ -128,117 +128,24 @@ var ImageSequenceAnimationLibrary = (function () {
         this.onChangeListeners.push(callback.bind(this));
     };
 
-    /**
-     * Main object controlling the image animation.
-     *
-     * @param divID ID of the div container which must contain the canvas element.
-     * @constructor
-     */
-    function ImageSequenceAnimation(divID) {
-        // Find the div
-        if (divID === undefined) {
-            throw new Error("The parameter divID is missing but required.");
-        }
-        this.divID = divID.startsWith("#") ? divID.substr(1) : divID;   // #id should work as well
-
-        this.div = document.getElementById(this.divID);
-        if (this.div === null) {
-            throw new Error("Could not find a div with the id " + this.divID + ".");
-        }
+    function CanvasView(animation) {
+        this.animation = animation;
 
         // Find the canvas
-        this.canvas = this.div.getElementsByTagName("canvas");
-        if (this.canvas.length !== 1) {
+        var canvas = this.animation.div.getElementsByTagName("canvas");
+        if (canvas.length !== 1) {
             throw new Error("The div #" + this.divID + " must contain exactly one canvas element.");
         }
-        this.canvas = this.canvas[0];
+
+        this.canvas = canvas[0];
         this.ctx = this.canvas.getContext("2d");
 
-        this.loadingFinishedListeners = [];
-        this.elementLoadedListeners = [];
-
-        this.parameters = {};
-        this.parameterNames = [];
-
-        this.loadedElements = 0;
-        this.images = {};   // Mapping between the filename (without the extension) and the corresponding image data
-
-        // Indicates whether a zip archive started to load
-        this.startedLoading = false;
-    }
-
-    function setImage(image, name) {
-        if (name !== undefined) {
-            this.images[name] = image;
-        }
-        else {
-            this.images[buildParameterString.call(this)] = image;
-        }
-    }
-
-    function getImage() {
-        if (!this.images.hasOwnProperty(buildParameterString.call(this))) {
-            throw new Error("The zip archive does not contain an image with the name " + buildParameterString.call(this) + ". Make sure you set the control elements in the same order as defined in the zip archive.");
-        }
-
-        return this.images[buildParameterString.call(this)];
-    }
-
-    function imagesSize() {
-        return Object.keys(this.images).length;
-    }
-
-    function addImage(imgData, filename) {
-        var img = new Image();
-        var self = this;
-        img.onload = function() {
-            elementLoaded.call(self);
-        };
-
-        var extractedParameters = numbInString(filename);
-        var identifier = "";
-
-        extractedParameters.forEach(function(parameter) {
-            if (self.parameters[parameter.name] === undefined) {
-                throw new Error("The parameter " + parameter.name + " is part of the filenames, but no corresponding control element is set.");
-            }
-
-            identifier += parameter.name + "=" + parameter.value;
-            if (imagesSize.call(self) === 0) {
-                self.parameters[parameter.name].numbDigits = parameter.value.length;
-            }
-        });
-
-        setImage.call(this, img, identifier);
-
-        img.src = imgData;  // It might be better to first load the image data when the onload function is set
-    }
-
-    function elementLoaded(){
-        this.loadedElements++;
-        informListeners(this.elementLoadedListeners);
-
-        if (loadingFinished.call(this)) {
-            // All elements are now loaded
-            informListeners(this.loadingFinishedListeners);
-            showImage.call(this);
-        }
-    }
-
-    function buildParameterString() {
-        var string = "";
-
-        for (var i = 0; i < this.parameterNames.length; ++i) {
-            var name = this.parameterNames[i];
-            string += name + "=" + this.parameters[name].getImgId();
-        }
-
-        return string;
+        this.animation.addLoadingFinishedListener(showImage.bind(this));
     }
 
     function showImage(img) {
         if (img === undefined) {
-            img = getImage.call(this);
+            img = this.animation.getImage();
         }
 
         if (img === false || img === undefined) {
@@ -260,6 +167,129 @@ var ImageSequenceAnimationLibrary = (function () {
         this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
     }
 
+    CanvasView.prototype.parameterChanged = function() {
+        showImage.call(this);
+    };
+
+    /**
+     * Main object controlling the image animation.
+     *
+     * @param divID ID of the div container which must contain the canvas element.
+     * @param ViewClass View class type (defaults to {@link CanvasView}).
+     * @constructor
+     */
+    function ImageSequenceAnimation(divID, ViewClass) {
+        // Find the div
+        if (divID === undefined) {
+            throw new Error("The parameter divID is missing but required.");
+        }
+        this.divID = divID.startsWith("#") ? divID.substr(1) : divID;   // #id should work as well
+
+        this.div = document.getElementById(this.divID);
+        if (this.div === null) {
+            throw new Error("Could not find a div with the id " + this.divID + ".");
+        }
+
+        this.loadingFinishedListeners = [];
+        this.elementLoadedListeners = [];
+
+        this.parameters = {};
+        this.parameterNames = [];
+
+        this.loadedElements = 0;
+        this.data = {};   // Mapping between the filename (without the extension) and the corresponding data
+
+        // Indicates whether a zip archive started to load
+        this.startedLoading = false;
+
+        if (ViewClass === undefined) {
+            this.view = new CanvasView(this);
+        }
+        else {
+            this.view = new ViewClass(this);
+        }
+    }
+
+    function setData(image, name) {
+        if (name !== undefined) {
+            this.data[name] = image;
+        }
+        else {
+            this.data[buildParameterString.call(this)] = image;
+        }
+    }
+
+    function dataSize() {
+        return Object.keys(this.data).length;
+    }
+
+    function addImage(imgData, filename) {
+        var img = new Image();
+        var self = this;
+        img.onload = function() {
+            elementLoaded.call(self);
+        };
+
+        var extractedParameters = numbInString(filename);
+        var identifier = "";
+
+        extractedParameters.forEach(function(parameter) {
+            if (self.parameters[parameter.name] === undefined) {
+                throw new Error("The parameter " + parameter.name + " is part of the filenames, but no corresponding control element is set.");
+            }
+
+            identifier += parameter.name + "=" + parameter.value;
+            if (dataSize.call(self) === 0) {
+                self.parameters[parameter.name].numbDigits = parameter.value.length;
+            }
+        });
+
+        setData.call(this, img, identifier);
+
+        img.src = imgData;  // It might be better to first load the image data when the onload function is set
+    }
+
+    function addText(data, filename) {
+        var extractedParameters = numbInString(filename);
+        var identifier = "";
+
+        var self = this;
+        extractedParameters.forEach(function(parameter) {
+            if (self.parameters[parameter.name] === undefined) {
+                throw new Error("The parameter " + parameter.name + " is part of the filenames, but no corresponding control element is set.");
+            }
+
+            identifier += parameter.name + "=" + parameter.value;
+            if (dataSize.call(self) === 0) {
+                self.parameters[parameter.name].numbDigits = parameter.value.length;
+            }
+        });
+
+        setData.call(this, data, identifier);
+        elementLoaded.call(this);
+    }
+
+    function elementLoaded(){
+        this.loadedElements++;
+        informListeners(this.elementLoadedListeners);
+
+        if (loadingFinished.call(this)) {
+            // All elements are now loaded
+            informListeners(this.loadingFinishedListeners);
+        }
+    }
+
+    function buildParameterString() {
+        var string = "";
+
+        for (var i = 0; i < this.parameterNames.length; ++i) {
+            var name = this.parameterNames[i];
+            string += name + "=" + this.parameters[name].getImgId();
+        }
+
+        return string;
+    }
+
     function loadingFinished() {
         return this.loadedElements === this.totalElements();
     }
@@ -267,11 +297,19 @@ var ImageSequenceAnimationLibrary = (function () {
     function getDataSrc() {
         var attribute = "data-zip_src";
         if (!this.div.hasAttribute(attribute)) {
-            throw new Error("The div " + this.divID + " does not have an attribute " + attribute + ". This is required and should point to the zip archive containing the images.");
+            throw new Error("The div " + this.divID + " does not have an attribute " + attribute + ". This is required and should point to the zip archive containing the data.");
         }
 
         return this.div.getAttribute(attribute);
     }
+
+    ImageSequenceAnimation.prototype.getImage = function() {
+        if (!this.data.hasOwnProperty(buildParameterString.call(this))) {
+            throw new Error("The zip archive does not contain an image with the name " + buildParameterString.call(this) + ". Make sure you set the control elements in the same order as defined in the zip archive.");
+        }
+
+        return this.data[buildParameterString.call(this)];
+    };
 
     /**
      * Add a control object to the animation (e.g. a slider).
@@ -300,7 +338,7 @@ var ImageSequenceAnimationLibrary = (function () {
 
             // Get informed when the parameters changes
             parameter.addOnChangeListener(function() {
-                showImage.call(this);
+                this.view.parameterChanged();
             }.bind(this));
 
             this.parameters[parameter.name] = parameter;
@@ -378,16 +416,25 @@ var ImageSequenceAnimationLibrary = (function () {
 
             JSZip.loadAsync(this.response).then(function(jszip) {
                 jszip.folder("").forEach(function(relativePath, zipObject) {
-                    if (!relativePath.endsWith(".png")) {
-                        console.warn("The zip archive " + src + " contains the file " + relativePath + " which is not a png file. The file is ignored.");
-                        return;
+                    if (relativePath.endsWith(".png")) {
+                        mime = "image/png";
+
+                        zipObject.async("uint8array").then(function (data) {
+                            var blob = new Blob([data], {type: mime});    // http://stackoverflow.com/questions/7650587/using-javascript-to-display-blob
+
+                            addImage.call(self, URL.createObjectURL(blob), relativePath);
+                        });
                     }
+                    else if (relativePath.endsWith(".json")) {
+                        mime = "application/json";
 
-                    zipObject.async("uint8array").then(function (data) {
-                        var blob = new Blob([data], {type: "image/png"});    // http://stackoverflow.com/questions/7650587/using-javascript-to-display-blob
-
-                        addImage.call(self, URL.createObjectURL(blob), relativePath);
-                    });
+                        zipObject.async("string").then(function (string) {
+                            addText.call(self, JSON.parse(string), relativePath);
+                        });
+                    }
+                    else {
+                        console.warn("The zip archive " + src + " contains the file " + relativePath + " which is unsupported. The file is ignored.");
+                    }
                 });
             });
         };
@@ -442,21 +489,21 @@ var ImageSequenceAnimationLibrary = (function () {
             var hasMouseListeners = false;
             self.removeMouseListeners = function() {
                 if (hasMouseListeners) {
-                    self.canvas.removeEventListener("mouseup", onMouseup);
-                    self.canvas.removeEventListener("mousemove", onMousemove);
-                    self.canvas.removeEventListener("mouseout", onMouseout);
+                    self.view.canvas.removeEventListener("mouseup", onMouseup);
+                    self.view.canvas.removeEventListener("mousemove", onMousemove);
+                    self.view.canvas.removeEventListener("mouseout", onMouseout);
                     hasMouseListeners = false;
                 }
             };
 
             function setText(text, alpha) {
-                var canvas = self.canvas;
-                var ctx = self.ctx;
+                var canvas = self.view.canvas;
+                var ctx = self.view.ctx;
 
                 ctx.save();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.globalAlpha = 0.3;
-                showImage.call(self, img);
+                showImage.call(self.view, img);
                 ctx.restore();
 
                 ctx.save();
@@ -480,9 +527,9 @@ var ImageSequenceAnimationLibrary = (function () {
             setText(clickText, 1.0);
 
             hasMouseListeners = true;
-            self.canvas.addEventListener("mouseup", onMouseup);
-            self.canvas.addEventListener("mousemove", onMousemove);
-            self.canvas.addEventListener("mouseout", onMouseout);
+            self.view.canvas.addEventListener("mouseup", onMouseup);
+            self.view.canvas.addEventListener("mousemove", onMousemove);
+            self.view.canvas.addEventListener("mouseout", onMouseout);
         };
     };
 
@@ -508,7 +555,7 @@ var ImageSequenceAnimationLibrary = (function () {
         });
         otherAnimation.addElementLoadedListener(function() {
             if (!self.startedLoading) {
-                self.canvas.dispatchEvent(new Event('mouseup'));
+                self.view.canvas.dispatchEvent(new Event('mouseup'));
             }
         });
 

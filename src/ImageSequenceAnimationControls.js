@@ -271,14 +271,14 @@ function CanvasLocator(name, min, max, step, defaultValue, margin) {
     function addMouseListener(animation) {
         // Mouse press plus press and drag should change the coordinates
         var isMouseDown = false;
-        animation.canvas.addEventListener("mousedown", function(evt){
+        animation.view.canvas.addEventListener("mousedown", function(evt){
             setCoordinates(this, evt);
             isMouseDown = true;
         });
-        animation.canvas.addEventListener("mouseup", function(){
+        animation.view.canvas.addEventListener("mouseup", function(){
             isMouseDown = false;
         });
-        animation.canvas.addEventListener("mousemove", function(evt){
+        animation.view.canvas.addEventListener("mousemove", function(evt){
             if (isMouseDown) {
                 setCoordinates(this, evt);
             }
