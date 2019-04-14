@@ -408,7 +408,7 @@ var ImageSequenceAnimationLibrary = (function () {
         var self = this;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", src);
-        xhr.responseType = "blob";  // We want to get binary data
+        xhr.responseType = "arraybuffer";  // "blob" does not work in Chrome (https://stackoverflow.com/a/8022521/2762258)
         xhr.onload = function() {
             if (this.status !== 200) {
                 throw new Error("Could not load the zip archive " + src + " (status code: " + this.status + ").");
