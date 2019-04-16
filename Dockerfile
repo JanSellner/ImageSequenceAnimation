@@ -24,10 +24,10 @@ RUN mkdir /home/ImageSequenceAnimation \
 
 # Install NodeJS and required packages
 RUN mkdir /nodejs \
-    && curl --location http://nodejs.org/dist/v11.11.0/node-v11.11.0-linux-x64.tar.gz | tar --extract --gzip --strip-components=1 --directory=/nodejs \
+    && curl --location http://nodejs.org/dist/v11.14.0/node-v11.14.0-linux-x64.tar.gz | tar --extract --gzip --strip-components=1 --directory=/nodejs \
     && PATH="$PATH:/nodejs/bin" \
     && npm install -g npm@6.9.0 \
-    && npm install -g uglify-js@3.4.9
+    && npm install -g uglify-js@3.5.4
 
 ENV PATH $PATH:/nodejs/bin
 
