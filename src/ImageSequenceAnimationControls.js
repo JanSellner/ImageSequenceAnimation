@@ -249,7 +249,7 @@ function CanvasLocator(name, min, max, step, defaultValue, margin) {
             return;
         }
 
-        // Example values are based on the animation in http://blog.localhost/showcase/Barycentric_coordinates
+        // Example values are based on the animation in /showcase/Barycentric_coordinates
         // Canvas coordinate system with a width = 651 and height = 594
         var pos = getMousePos(canvas, evt); // x = [0;650], y = [0;593]
         if (pos.x < margin.left || pos.x > canvas.width - margin.right - 1 ||
