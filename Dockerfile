@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:24.04
 
 MAINTAINER Milania
 
@@ -18,16 +18,14 @@ ENV LANG en_US.UTF-8
 RUN mkdir /home/ImageSequenceAnimation \
     && apt-get update && apt-get install -y \
 	   curl \
-       python3 python3-pip \
-    && ln -s $(which python3) /usr/bin/python \
-    && ln -s $(which pip3) /usr/bin/pip
+       python3 python3-pip python-is-python3
 
 # Install NodeJS and required packages
 RUN mkdir /nodejs \
-    && curl --location http://nodejs.org/dist/v11.14.0/node-v11.14.0-linux-x64.tar.gz | tar --extract --gzip --strip-components=1 --directory=/nodejs \
+    && curl --location https://nodejs.org/dist/v22.2.0/node-v22.2.0-linux-x64.tar.gz | tar --extract --gzip --strip-components=1 --directory=/nodejs \
     && PATH="$PATH:/nodejs/bin" \
-    && npm install -g npm@6.9.0 \
-    && npm install -g uglify-js@3.5.4
+    && npm install -g npm@10.8.0 \
+    && npm install -g uglify-js@3.17.4
 
 ENV PATH $PATH:/nodejs/bin
 
