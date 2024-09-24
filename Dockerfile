@@ -22,9 +22,9 @@ RUN mkdir /home/ImageSequenceAnimation \
 
 # Install NodeJS and required packages
 RUN mkdir /nodejs \
-    && curl --location https://nodejs.org/dist/v22.2.0/node-v22.2.0-linux-x64.tar.gz | tar --extract --gzip --strip-components=1 --directory=/nodejs \
+    && latest_node=$(curl -s --location https://nodejs.org/dist/latest/ | grep -oP 'node-v\d+\.\d+\.\d+-linux-x64.tar.gz(?=</a>)') \
+    && curl --location https://nodejs.org/dist/latest/$latest_node | tar --extract --gzip --strip-components=1 --directory=/nodejs \
     && PATH="$PATH:/nodejs/bin" \
-    && npm install -g npm@10.8.0 \
     && npm install -g uglify-js@3.17.4
 
 ENV PATH $PATH:/nodejs/bin
