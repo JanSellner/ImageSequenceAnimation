@@ -1,1 +1,20 @@
 *.zip filter=lfs diff=lfs merge=lfs -text
+
+# Consistent file endings on every system
+*.txt text eol=lf safecrlf=true
+*.html text eol=lf safecrlf=true
+*.css text eol=lf safecrlf=true
+*.php text eol=lf safecrlf=true
+*.js text eol=lf safecrlf=true
+*.pl text eol=lf safecrlf=true
+*.pm text eol=lf safecrlf=true
+*.py text eol=lf safecrlf=true
+*.yml text eol=lf safecrlf=true
+*.json text eol=lf safecrlf=true
+*.sh text eol=lf safecrlf=true
+*.conf text eol=lf safecrlf=true
+*.cfg text eol=lf safecrlf=true
+*.lock text eol=lf safecrlf=true
+*.md text eol=lf safecrlf=true
+Dockerfile text eol=lf safecrlf=true
+.htaccess text eol=lf safecrlf=true
